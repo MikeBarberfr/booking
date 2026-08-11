@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Espace pro — Réservation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #14120f; --surface: #1f1c17; --surface-2: #2a251d;
+    --cream: #f1e9db; --muted: #a89c88; --accent-red: #b4392c;
+    --accent-brass: #c9a35a; --border: #3a332a; --green:#5fa06a;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--cream); font-family:'Inter',sans-serif; }
+  .display { font-family:'Oswald',sans-serif; letter-spacing:.03em; text-transform:uppercase; }
+  .stripebar { height:6px; width:100%; background: repeating-linear-gradient(-45deg, var(--accent-red) 0 10px, var(--cream) 10px 20px, var(--accent-brass) 20px 30px); }
+  header { display:flex; align-items:center; justify-content:space-between; padding:16px 24px; background:var(--surface); }
+  main { max-width:900px; margin:0 auto; padding:24px 16px 60px; }
+  .tabs { display:flex; gap:6px; overflow-x:auto; margin-bottom:20px; }
+  .tab-btn { flex:0 0 auto; padding:8px 14px; border-radius:6px; background:var(--surface); border:1px solid var(--border); color:var(--cream); cursor:pointer; font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:12px; }
+  .tab-btn.active { background:var(--accent-red); border-color:var(--accent-red); }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px; margin-bottom:16px; }
+  .panel h3 { margin:0 0 14px; color:var(--accent-brass); font-size:14px; }
+  label.field { display:block; margin-bottom:10px; font-size:14px; }
+  label.field span { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  input, select { width:100%; padding:9px 11px; border-radius:6px; background:transparent; border:1px solid var(--border); color:var(--cream); font-size:14px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .btn { padding:10px 18px; border-radius:6px; border:none; cursor:pointer; font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.05em; font-size:13px; }
+  .btn-primary { background:var(--accent-red); color:var(--cream); }
+  .btn-gold { background:var(--accent-brass); color:var(--bg); }
+  .btn-ghost { background:transparent; color:var(--cream); border:1px solid var(--border); }
+  .btn-icon { padding:6px 9px; }
+  .booking-row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:var(--surface-2); border-radius:6px; padding:8px 10px; margin-bottom:8px; font-size:14px; }
+  .badge { font-size:10px; text-transform:uppercase; padding:2px 8px; border-radius:99px; }
+  .badge.en_attente { color:var(--accent-brass); border:1px solid var(--accent-brass); }
+  .badge.confirme { color:var(--green); border:1px solid var(--green); }
+  .badge.annule { color:var(--accent-red); border:1px solid var(--accent-red); }
+  .service-row, .hour-row { display:flex; gap:10px; align-items:center; background:var(--surface-2); border-radius:6px; padding:8px 10px; margin-bottom:8px; font-size:14px; flex-wrap:wrap; }
+  .muted { color:var(--muted); }
+  .hidden { display:none; }
+  .login-box { max-width:320px; margin:60px auto; text-align:center; }
+  .error { color:var(--accent-red); font-size:13px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:600px){ .grid2{ grid-template-columns:1fr; } }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; text-align:center; }
+  .stat-card .num { font-family:'Oswald',sans-serif; font-size:26px; color:var(--accent-brass); }
+  .stat-card .lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:2px; }
+  .cal-wrap { display:flex; overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--surface); }
+  .cal-gutter { flex:0 0 46px; position:relative; border-right:1px solid var(--border); }
+  .cal-gutter-label { position:absolute; right:6px; transform:translateY(-50%); font-size:10px; color:var(--muted); }
+  .cal-day-col { flex:1 1 0; min-width:104px; position:relative; border-right:1px solid var(--border); }
+  .cal-day-col:last-child { border-right:none; }
+  .cal-day-head { text-align:center; font-size:11px; padding:8px 2px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); }
+  .cal-day-head .d { font-family:'Oswald',sans-serif; font-size:15px; color:var(--cream); }
+  .cal-hour-line { position:absolute; left:0; right:0; border-top:1px solid var(--border); }
+  .cal-body { position:relative; }
+  .cal-block { position:absolute; left:3px; right:3px; border-radius:4px; padding:3px 5px; font-size:10.5px; overflow:hidden; line-height:1.25; color:#14120f; background:var(--accent-brass); }
+  .cal-block.confirme { background:var(--green); }
+  .cal-block.annule { background:transparent; border:1px dashed var(--border); color:var(--muted); text-decoration:line-through; }
+  .cal-block b { display:block; font-size:11px; }
+  .cal-closed-col { background:repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 6px, var(--surface) 6px, var(--surface) 12px); }
+  .day-pill { flex:0 0 auto; width:52px; text-align:center; padding:8px 0; border-radius:8px; background:var(--surface); border:1px solid var(--border); color:var(--cream); cursor:pointer; }
+  .day-pill.active { background:var(--accent-red); border-color:var(--accent-red); }
+  .day-pill .wd { font-size:10px; text-transform:uppercase; color:var(--muted); }
+  .day-pill.active .wd { color:var(--cream); }
+  .day-pill .n { font-family:'Oswald',sans-serif; font-size:16px; }
+
+  .punch-card { background:linear-gradient(135deg, var(--surface-2), var(--surface)); border:1px solid var(--accent-brass); border-radius:12px; padding:18px; }
+  .punch-card .pc-title { font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.05em; color:var(--accent-brass); font-size:13px; margin-bottom:4px; }
+  .punch-card .pc-name { font-size:15px; margin-bottom:14px; }
+  .punch-row { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+  .punch-dot { aspect-ratio:1; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:16px; background:transparent; color:var(--muted); position:relative; }
+  .punch-dot.filled { border-color:var(--accent-brass); background:var(--accent-brass); color:var(--bg); }
+  .punch-dot.reward-half { border-color:var(--accent-red); }
+  .punch-dot.reward-half.filled { background:var(--accent-red); border-color:var(--accent-red); color:var(--cream); }
+  .punch-dot.reward-free { border-color:#d4af37; }
+  .punch-dot.reward-free.filled { background:#d4af37; border-color:#d4af37; color:var(--bg); }
+  .punch-dot .tag { position:absolute; bottom:-16px; font-size:8px; color:var(--muted); white-space:nowrap; left:50%; transform:translateX(-50%); }
+  .pc-status { margin-top:20px; text-align:center; font-size:13px; color:var(--cream); }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-box { background:var(--bg); border:1px solid var(--accent-brass); border-radius:14px; padding:28px 22px; max-width:380px; width:100%; text-align:center; }
+</style>
+</head>
+<body>
+
+<div id="loginView" class="login-box">
+  <p class="display" style="font-size:20px">Espace pro</p>
+  <label class="field"><span>Email</span><input id="loginEmail" type="email" /></label>
+  <label class="field"><span>Mot de passe</span><input id="loginPass" type="password" /></label>
+  <p id="loginError" class="error hidden"></p>
+  <button class="btn btn-primary" style="width:100%" onclick="login()">Se connecter</button>
+</div>
+
+<div id="appView" class="hidden">
+  <header>
+    <span class="display" id="bizNameAdmin">Espace pro</span>
+    <button class="btn btn-ghost" onclick="logout()">Déconnexion</button>
+  </header>
+  <div class="stripebar"></div>
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="agenda" onclick="showTab('agenda')">Agenda</button>
+      <button class="tab-btn" data-tab="services" onclick="showTab('services')">Prestations</button>
+      <button class="tab-btn" data-tab="hours" onclick="showTab('hours')">Horaires</button>
+      <button class="tab-btn" data-tab="settings" onclick="showTab('settings')">Réglages</button>
+      <button class="tab-btn" data-tab="loyalty" onclick="showTab('loyalty')">Fidélité</button>
+    </div>
+
+    <div id="tab-agenda" class="tab-panel">
+      <div class="row" style="margin-bottom:14px">
+        <button class="btn btn-ghost btn-icon" onclick="shiftWeek(-7)">&larr;</button>
+        <span id="weekLabel" class="muted"></span>
+        <button class="btn btn-ghost btn-icon" onclick="shiftWeek(7)">&rarr;</button>
+        <button class="btn btn-gold" style="margin-left:auto" onclick="openAddBooking()">+ Ajouter un rendez-vous</button>
+      </div>
+
+      <div id="weekStats" class="grid2" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"></div>
+
+      <div class="row" style="margin-bottom:10px">
+        <button class="tab-btn" id="viewWeekBtn" onclick="setCalView('week')">Vue semaine</button>
+        <button class="tab-btn" id="viewDayBtn" onclick="setCalView('day')">Vue jour</button>
+      </div>
+      <div id="dayPicker" class="days-picker hidden" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:10px"></div>
+
+      <div id="calendarWrap" class="cal-wrap" style="margin-bottom:20px"></div>
+
+      <div id="agendaDays"></div>
+    </div>
+
+    <div id="tab-services" class="tab-panel hidden">
+      <div class="panel">
+        <h3>Ajouter une prestation</h3>
+        <div class="grid2">
+          <label class="field"><span>Nom</span><input id="svcName" placeholder="Coupe homme" /></label>
+          <label class="field"><span>Durée (min)</span><input id="svcDuration" type="number" value="30" /></label>
+          <label class="field"><span>Prix (€, optionnel)</span><input id="svcPrice" type="number" /></label>
+        </div>
+        <button class="btn btn-gold" onclick="addService()">Ajouter</button>
+      </div>
+      <div class="panel"><h3>Prestations actuelles</h3><div id="servicesList"></div></div>
+    </div>
+
+    <div id="tab-hours" class="tab-panel hidden">
+      <div class="panel"><h3>Horaires hebdomadaires</h3><div id="hoursList"></div></div>
+      <div class="panel">
+        <h3>Fermetures exceptionnelles</h3>
+        <div class="row"><input id="closedDateInput" type="date" style="max-width:200px" /><button class="btn btn-gold" onclick="addClosedDate()">Ajouter</button></div>
+        <div id="closedDatesList" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div id="tab-settings" class="tab-panel hidden">
+      <div class="panel">
+        <h3>Réglages généraux</h3>
+        <label class="field"><span>Nom de l'activité</span><input id="setBizName" /></label>
+        <label class="field"><span>Email de notification (vous)</span><input id="setEmail" type="email" /></label>
+        <label class="field"><span>Montant de l'acompte (€)</span><input id="setDeposit" type="number" /></label>
+        <button class="btn btn-primary" onclick="saveSettings()">Enregistrer</button>
+      </div>
+    </div>
+
+    <div id="tab-loyalty" class="tab-panel hidden">
+      <div class="panel">
+        <h3>Chercher un client</h3>
+        <div class="row">
+          <input id="loyaltySearch" placeholder="Numéro de téléphone" style="max-width:220px" />
+          <button class="btn btn-gold" onclick="searchLoyalty()">Chercher</button>
+        </div>
+        <div id="loyaltyResult" style="margin-top:12px"></div>
+      </div>
+      <div class="panel">
+        <h3>Clients les plus fidèles</h3>
+        <div id="loyaltyTop"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const cfg = window.APP_CONFIG;
+const supabase = createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+window.supabase = supabase;
+
+const DAYS_FR = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+const MONTHS_FR = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const pad = n => String(n).padStart(2,"0");
+const toDateStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmtLong = ds => { const d = new Date(ds+"T00:00:00"); return `${DAYS_FR[d.getDay()]} ${d.getDate()} ${MONTHS_FR[d.getMonth()]}`; };
+
+let servicesCache = [];
+let hoursCache = [];
+let calView = window.innerWidth < 768 ? "day" : "week";
+let selectedDayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1; // 0=Lundi
+let weekStart = (() => { const d = new Date(); const wd = d.getDay(); const diff = wd === 0 ? -6 : 1 - wd; d.setDate(d.getDate()+diff); return d; })();
+
+async function checkSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) { document.getElementById("loginView").classList.add("hidden"); document.getElementById("appView").classList.remove("hidden"); boot(); }
+}
+
+window.login = async () => {
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPass").value;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const err = document.getElementById("loginError");
+  if (error) { err.textContent = "Identifiants incorrects."; err.classList.remove("hidden"); return; }
+  err.classList.add("hidden");
+  document.getElementById("loginView").classList.add("hidden");
+  document.getElementById("appView").classList.remove("hidden");
+  boot();
+};
+window.logout = async () => { await supabase.auth.signOut(); location.reload(); };
+
+async function boot() {
+  const { data: s } = await supabase.from("settings").select("*").single();
+  document.getElementById("bizNameAdmin").textContent = s?.business_name || "Espace pro";
+  document.getElementById("setBizName").value = s?.business_name || "";
+  document.getElementById("setEmail").value = s?.barber_email || "";
+  document.getElementById("setDeposit").value = s?.deposit_amount || "";
+  await loadServices();
+  await loadHours();
+  await loadClosedDates();
+  document.getElementById("viewWeekBtn").classList.toggle("active", calView === "week");
+  document.getElementById("viewDayBtn").classList.toggle("active", calView === "day");
+  document.getElementById("dayPicker").classList.toggle("hidden", calView !== "day");
+  await loadWeek();
+}
+
+window.showTab = (name) => {
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.add("hidden"));
+  document.getElementById(`tab-${name}`).classList.remove("hidden");
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  if (name === "loyalty") loadTopLoyalty();
+};
+
+function nextRewardLabel(visitCount) {
+  const upcoming = visitCount + 1;
+  const pos = ((upcoming - 1) % 10) + 1;
+  if (pos === 10) return `Prochain passage (${upcoming}e) : coupe offerte 🎉`;
+  if (pos === 6) return `Prochain passage (${upcoming}e) : -50% 🎉`;
+  const distToHalf = pos < 6 ? 6 - pos : (6 - pos + 10);
+  const distToFree = 10 - pos;
+  const dist = Math.min(distToHalf, distToFree);
+  const rewardType = distToFree <= distToHalf ? "coupe offerte" : "-50%";
+  return `Encore ${dist} passage(s) avant la prochaine récompense (${rewardType})`;
+}
+
+function renderPunchCard(visitCount, clientName) {
+  const filled = visitCount % 10; // nb de tampons dans le cycle en cours (10 -> 0, nouveau cycle)
+  let dots = "";
+  for (let i = 1; i <= 10; i++) {
+    const isFilled = i <= filled;
+    const cls = i === 6 ? "reward-half" : i === 10 ? "reward-free" : "";
+    const icon = isFilled ? "✓" : (i === 6 ? "½" : i === 10 ? "🎁" : "");
+    const tag = i === 6 ? "-50%" : i === 10 ? "Offert" : "";
+    dots += `<div class="punch-dot ${cls} ${isFilled ? "filled" : ""}">${icon}${tag ? `<span class="tag">${tag}</span>` : ""}</div>`;
+  }
+  return `
+    <div class="punch-card">
+      <div class="pc-title">Carte de fidélité</div>
+      <div class="pc-name">${clientName || ""}</div>
+      <div class="punch-row" style="margin-bottom:22px">${dots}</div>
+      <div class="pc-status">${visitCount} passage(s) au total · ${nextRewardLabel(visitCount)}</div>
+    </div>`;
+}
+
+window.searchLoyalty = async () => {
+  const phone = document.getElementById("loyaltySearch").value.trim();
+  const box = document.getElementById("loyaltyResult");
+  if (!phone) return;
+  const { data, error } = await supabase.from("clients").select("*").eq("phone", phone).single();
+  if (error || !data) {
+    box.innerHTML = `<p class="muted">Aucun client trouvé avec ce numéro.</p>`;
+    return;
+  }
+  box.innerHTML = renderPunchCard(data.visit_count, data.name);
+};
+
+async function loadTopLoyalty() {
+  const { data } = await supabase.from("clients").select("*").order("visit_count", { ascending: false }).limit(10);
+  const box = document.getElementById("loyaltyTop");
+  box.innerHTML = !data || data.length === 0
+    ? `<p class="muted">Aucun client pour l'instant.</p>`
+    : data.map(c => `
+      <div class="service-row">
+        <span>${c.name || "—"} — ${c.phone}</span>
+        <span class="muted" style="margin-left:auto">${c.visit_count} passage(s)</span>
+      </div>`).join("");
+}
+
+/* ---- Agenda ---- */
+window.shiftWeek = (days) => { weekStart.setDate(weekStart.getDate()+days); loadWeek(); };
+
+const DAYS_SHORT2 = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+const timeToMinA = (t) => { const [h,m] = t.split(":").map(Number); return h*60+m; };
+const padA = n => String(n).padStart(2,"0");
+const minToTimeA = (m) => `${padA(Math.floor(m/60))}:${padA(m%60)}`;
+
+window.setCalView = (mode) => {
+  calView = mode;
+  document.getElementById("viewWeekBtn").classList.toggle("active", mode === "week");
+  document.getElementById("viewDayBtn").classList.toggle("active", mode === "day");
+  document.getElementById("dayPicker").classList.toggle("hidden", mode !== "day");
+  loadWeek();
+};
+
+async function loadWeek() {
+  document.getElementById("weekLabel").textContent = `Semaine du ${fmtLong(toDateStr(weekStart))}`;
+  const weekData = []; // { ds, dateObj, weekday, bookings }
+  for (let i=0;i<7;i++) {
+    const d = new Date(weekStart); d.setDate(d.getDate()+i);
+    const ds = toDateStr(d);
+    const { data: bookings } = await supabase
+      .from("bookings")
+      .select("*, services(name, duration_minutes, price)")
+      .eq("booking_date", ds)
+      .order("start_time");
+    weekData.push({ ds, dateObj: d, weekday: d.getDay(), bookings: bookings || [] });
+  }
+
+  await renderStats(weekData);
+  renderDayPicker(weekData);
+  renderCalendarGrid(weekData);
+  renderDayPanels(weekData);
+}
+
+async function renderStats(weekData) {
+  const active = weekData.flatMap(w => w.bookings.filter(b => b.status !== "annule"));
+  const clientCount = active.length;
+  const revenue = active.reduce((sum, b) => sum + (b.services?.price ? Number(b.services.price) : 0), 0);
+
+  // Créneaux restants : estimation basée sur la prestation la plus courte active
+  let remaining = "—";
+  const ref = [...servicesCache].filter(s => s.active !== false).sort((a,b) => a.duration_minutes - b.duration_minutes)[0];
+  if (ref) {
+    let total = 0;
+    for (const w of weekData) {
+      const { data: slots } = await supabase.rpc("get_available_slots", { p_date: w.ds, p_service_id: ref.id });
+      total += (slots || []).length;
+    }
+    remaining = total;
+  }
+
+  document.getElementById("weekStats").innerHTML = `
+    <div class="stat-card"><div class="num">${remaining}</div><div class="lbl">Créneaux restants (${ref ? ref.name : "—"})</div></div>
+    <div class="stat-card"><div class="num">${clientCount}</div><div class="lbl">Clients cette semaine</div></div>
+    <div class="stat-card"><div class="num">${revenue.toFixed(0)} €</div><div class="lbl">Montant total attendu</div></div>`;
+}
+
+function renderDayPicker(weekData) {
+  const picker = document.getElementById("dayPicker");
+  picker.innerHTML = weekData.map((w, i) => `
+    <div class="day-pill ${i === selectedDayIdx ? "active" : ""}" onclick="selectDay(${i})">
+      <div class="wd">${DAYS_SHORT2[w.weekday === 0 ? 6 : w.weekday-1]}</div>
+      <div class="n">${w.dateObj.getDate()}</div>
+    </div>`).join("");
+}
+window.selectDay = (i) => { selectedDayIdx = i; loadWeek(); };
+
+function renderCalendarGrid(weekDataFull) {
+  const wrap = document.getElementById("calendarWrap");
+  if (!hoursCache.length) { wrap.innerHTML = ""; return; }
+
+  const weekData = calView === "day" ? [weekDataFull[selectedDayIdx]] : weekDataFull;
+
+  let dayStart = 24*60, dayEnd = 0;
+  hoursCache.forEach(h => {
+    if (h.is_closed) return;
+    dayStart = Math.min(dayStart, timeToMinA(h.open_time.slice(0,5)));
+    dayEnd = Math.max(dayEnd, timeToMinA(h.close_time.slice(0,5)));
+  });
+  if (dayStart >= dayEnd) { wrap.innerHTML = `<p class="muted" style="padding:14px">Aucun horaire d'ouverture configuré.</p>`; return; }
+
+  const PXPERMIN = 1.1;
+  const totalHeight = (dayEnd - dayStart) * PXPERMIN;
+  const hourMarks = [];
+  for (let m = Math.ceil(dayStart/60)*60; m <= dayEnd; m += 60) hourMarks.push(m);
+
+  const gutter = `<div class="cal-gutter" style="height:${totalHeight+30}px">
+    <div style="height:30px"></div>
+    ${hourMarks.map(m => `<div class="cal-gutter-label" style="top:${30+(m-dayStart)*PXPERMIN}px">${minToTimeA(m)}</div>`).join("")}
+  </div>`;
+
+  const cols = weekData.map(w => {
+    const h = hoursCache.find(x => x.weekday === w.weekday);
+    const closed = !h || h.is_closed;
+    const blocks = closed ? "" : w.bookings.map(b => {
+      const startMin = timeToMinA(b.start_time.slice(0,5));
+      const dur = b.services?.duration_minutes || 30;
+      const top = (startMin - dayStart) * PXPERMIN;
+      const height = Math.max(dur * PXPERMIN, 18);
+      return `<div class="cal-block ${b.status}" style="top:${top}px;height:${height}px" title="${b.client_name} — ${b.services?.name || ''}">
+        <b>${b.start_time.slice(0,5)} ${b.client_name}</b>${b.services?.name || ""}
+      </div>`;
+    }).join("");
+    return `<div class="cal-day-col ${closed ? "cal-closed-col" : ""}">
+      <div class="cal-day-head"><div>${DAYS_SHORT2[w.weekday === 0 ? 6 : w.weekday-1]}</div><div class="d">${w.dateObj.getDate()}</div></div>
+      <div class="cal-body" style="height:${totalHeight}px">${blocks}</div>
+    </div>`;
+  }).join("");
+
+  wrap.innerHTML = gutter + cols;
+}
+
+function renderDayPanels(weekData) {
+  const container = document.getElementById("agendaDays");
+  container.innerHTML = "";
+  weekData.forEach(({ ds, bookings }) => {
+    const panel = document.createElement("div");
+    panel.className = "panel";
+    panel.innerHTML = `<h3>${fmtLong(ds)}</h3>` + (
+      !bookings || bookings.length === 0
+        ? `<p class="muted">Aucune réservation.</p>`
+        : bookings.map(b => `
+          <div class="booking-row">
+            <strong>${b.start_time.slice(0,5)}</strong>
+            <span>${b.services?.name || ""}</span>
+            <span class="muted">${b.client_name} · ${b.client_phone}</span>
+            ${b.client_comment ? `<span class="muted" style="font-style:italic">"${b.client_comment}"</span>` : ""}
+            ${b.reward_applied ? `<span class="badge" style="color:var(--accent-brass);border-color:var(--accent-brass)">${b.reward_applied === "free" ? "🎉 Offert" : "🎉 -50%"}</span>` : ""}
+            <span class="badge ${b.status}">${b.status === "en_attente" ? "En attente" : b.status === "confirme" ? "Confirmé" : "Annulé"}</span>
+            ${b.completed ? `<span class="badge" style="color:var(--green);border-color:var(--green)">✓ Passage compté</span>` : ""}
+            <span style="margin-left:auto; display:flex; gap:6px;">
+              ${b.status !== "confirme" ? `<button class="btn btn-gold btn-icon" onclick="setStatus('${b.id}','confirme')">✓</button>` : ""}
+              ${b.status !== "annule" ? `<button class="btn btn-ghost btn-icon" onclick="setStatus('${b.id}','annule')">✕</button>` : ""}
+              ${!b.completed ? `<button class="btn btn-ghost btn-icon" title="Marquer comme terminé et tamponner la carte" onclick="markCompleted('${b.id}')">🏷️</button>` : ""}
+              <button class="btn btn-ghost btn-icon" onclick="deleteBooking('${b.id}')">🗑</button>
+            </span>
+          </div>`).join("")
+    );
+    container.appendChild(panel);
+  });
+}
+window.setStatus = async (id, status) => { await supabase.from("bookings").update({ status }).eq("id", id); loadWeek(); };
+window.deleteBooking = async (id) => { await supabase.from("bookings").delete().eq("id", id); loadWeek(); };
+window.openAddBooking = () => {
+  const svcOptions = servicesCache.filter(s => s.active !== false)
+    .map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min)</option>`).join("");
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.id = "addBookingOverlay";
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="modal-box" style="text-align:left;max-width:420px">
+      <p class="display" style="font-size:16px;color:var(--accent-brass);margin-bottom:16px">Ajouter un rendez-vous</p>
+      <label class="field"><span>Prestation</span><select id="mbService">${svcOptions}</select></label>
+      <div class="row">
+        <label class="field" style="flex:1"><span>Date</span><input type="date" id="mbDate" /></label>
+        <label class="field" style="flex:1"><span>Heure</span><input type="time" id="mbTime" /></label>
+      </div>
+      <label class="field"><span>Prénom / Nom client</span><input id="mbName" /></label>
+      <label class="field"><span>Téléphone</span><input id="mbPhone" /></label>
+      <label class="field"><span>Email (optionnel)</span><input id="mbEmail" type="email" /></label>
+      <label class="field"><span>Statut</span>
+        <select id="mbStatus">
+          <option value="confirme">Confirmé (acompte déjà réglé ou géré ailleurs)</option>
+          <option value="en_attente">En attente</option>
+        </select>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:10px 0 16px;color:var(--muted)">
+        <input type="checkbox" id="mbNoNotify" checked /> Ne pas envoyer d'email de confirmation (import d'un rendez-vous déjà pris ailleurs)
+      </label>
+      <p id="mbError" class="error hidden"></p>
+      <div class="row">
+        <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('addBookingOverlay').remove()">Annuler</button>
+        <button class="btn btn-gold" style="flex:1" onclick="submitManualBooking()">Ajouter</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+};
+
+window.submitManualBooking = async () => {
+  const serviceId = document.getElementById("mbService").value;
+  const date = document.getElementById("mbDate").value;
+  const time = document.getElementById("mbTime").value;
+  const name = document.getElementById("mbName").value.trim();
+  const phone = document.getElementById("mbPhone").value.trim();
+  const email = document.getElementById("mbEmail").value.trim();
+  const status = document.getElementById("mbStatus").value;
+  const noNotify = document.getElementById("mbNoNotify").checked;
+  const err = document.getElementById("mbError");
+
+  if (!serviceId || !date || !time || !name || !phone) {
+    err.textContent = "Merci de remplir au minimum la prestation, la date, l'heure, le nom et le téléphone.";
+    err.classList.remove("hidden");
+    return;
+  }
+  err.classList.add("hidden");
+
+  const { error } = await supabase.from("bookings").insert({
+    service_id: serviceId,
+    booking_date: date,
+    start_time: time,
+    client_name: name,
+    client_phone: phone,
+    client_email: email || null,
+    status,
+    no_notify: noNotify,
+  });
+
+  if (error) {
+    err.textContent = "Ce créneau est déjà occupé ou une erreur est survenue : " + error.message;
+    err.classList.remove("hidden");
+    return;
+  }
+  document.getElementById("addBookingOverlay").remove();
+  loadWeek();
+};
+
+window.markCompleted = async (id) => {
+  if (!confirm("Confirmer que ce rendez-vous a bien eu lieu et a été payé ? Ça ajoute un tampon à la carte de fidélité du client.")) return;
+  await supabase.from("bookings").update({ completed: true }).eq("id", id);
+
+  const { data: booking } = await supabase.from("bookings").select("client_id, client_name").eq("id", id).single();
+  if (booking?.client_id) {
+    const { data: client } = await supabase.from("clients").select("visit_count, name").eq("id", booking.client_id).single();
+    if (client) showStampModal(client.visit_count, client.name || booking.client_name);
+  }
+  loadWeek();
+};
+
+function showStampModal(visitCount, name) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <p class="display" style="font-size:16px;color:var(--accent-brass);margin-bottom:16px">🏷️ Tampon ajouté !</p>
+      ${renderPunchCard(visitCount, name)}
+      <button class="btn btn-gold" style="width:100%;margin-top:20px" onclick="this.closest('.modal-overlay').remove()">Fermer</button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+/* ---- Services ---- */
+async function loadServices() {
+  const { data } = await supabase.from("services").select("*").order("name");
+  servicesCache = data || [];
+  document.getElementById("servicesList").innerHTML = servicesCache.length === 0
+    ? `<p class="muted">Aucune prestation.</p>`
+    : servicesCache.map(s => `
+      <div class="service-row">
+        <span>${s.name} — ${s.duration_minutes} min${s.price ? " — "+s.price+" €" : ""}</span>
+        <button class="btn btn-ghost btn-icon" style="margin-left:auto" onclick="removeService('${s.id}')">🗑</button>
+      </div>`).join("");
+}
+window.addService = async () => {
+  const name = document.getElementById("svcName").value.trim();
+  const duration = Number(document.getElementById("svcDuration").value);
+  const price = document.getElementById("svcPrice").value ? Number(document.getElementById("svcPrice").value) : null;
+  if (!name || !duration) return;
+  await supabase.from("services").insert({ name, duration_minutes: duration, price });
+  document.getElementById("svcName").value = "";
+  loadServices();
+};
+window.removeService = async (id) => { await supabase.from("services").update({ active:false }).eq("id", id); loadServices(); };
+
+/* ---- Hours ---- */
+async function loadHours() {
+  const { data } = await supabase.from("business_hours").select("*").order("weekday");
+  hoursCache = data || [];
+  document.getElementById("hoursList").innerHTML = (data||[]).map(h => `
+    <div class="hour-row">
+      <span style="width:100px">${DAYS_FR[h.weekday]}</span>
+      <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" ${h.is_closed?"checked":""} onchange="toggleClosed(${h.weekday}, this.checked)" /> Fermé</label>
+      ${!h.is_closed ? `
+        <input type="time" value="${h.open_time?.slice(0,5)}" style="max-width:110px" onchange="updateHour(${h.weekday},'open_time',this.value)" />
+        <span class="muted">à</span>
+        <input type="time" value="${h.close_time?.slice(0,5)}" style="max-width:110px" onchange="updateHour(${h.weekday},'close_time',this.value)" />
+      ` : ""}
+    </div>`).join("");
+}
+window.toggleClosed = async (weekday, closed) => { await supabase.from("business_hours").update({ is_closed: closed }).eq("weekday", weekday); await loadHours(); loadWeek(); };
+window.updateHour = async (weekday, field, value) => { await supabase.from("business_hours").update({ [field]: value }).eq("weekday", weekday); await loadHours(); loadWeek(); };
+
+async function loadClosedDates() {
+  const { data } = await supabase.from("closed_dates").select("*").order("closed_date");
+  document.getElementById("closedDatesList").innerHTML = (data||[]).map(c => `
+    <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:99px;padding:4px 10px;margin:0 6px 6px 0;font-size:12px">
+      ${c.closed_date} <button style="background:none;border:none;color:var(--muted);cursor:pointer" onclick="removeClosedDate('${c.closed_date}')">✕</button>
+    </span>`).join("");
+}
+window.addClosedDate = async () => {
+  const v = document.getElementById("closedDateInput").value;
+  if (!v) return;
+  await supabase.from("closed_dates").insert({ closed_date: v });
+  document.getElementById("closedDateInput").value = "";
+  loadClosedDates();
+};
+window.removeClosedDate = async (ds) => { await supabase.from("closed_dates").delete().eq("closed_date", ds); loadClosedDates(); };
+
+/* ---- Settings ---- */
+window.saveSettings = async () => {
+  await supabase.from("settings").update({
+    business_name: document.getElementById("setBizName").value.trim(),
+    barber_email: document.getElementById("setEmail").value.trim(),
+    deposit_amount: Number(document.getElementById("setDeposit").value),
+  }).eq("id", 1);
+  document.getElementById("bizNameAdmin").textContent = document.getElementById("setBizName").value.trim();
+};
+
+checkSession();
+</script>
+</body>
+</html>
