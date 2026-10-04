@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Réservation en ligne</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #14120f; --surface: #1f1c17; --surface-2: #2a251d;
+    --cream: #f1e9db; --muted: #a89c88; --accent-red: #b4392c;
+    --accent-brass: #c9a35a; --border: #3a332a;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background: var(--bg); color: var(--cream); font-family:'Inter',sans-serif; }
+  .display { font-family:'Oswald',sans-serif; letter-spacing:.03em; text-transform:uppercase; }
+  .stripebar { height:6px; width:100%; background: repeating-linear-gradient(-45deg, var(--accent-red) 0 10px, var(--cream) 10px 20px, var(--accent-brass) 20px 30px); }
+  header { display:flex; align-items:center; justify-content:center; padding:20px; background: var(--surface); }
+  header h1 { font-size:20px; margin:0; }
+  main { max-width:640px; margin:0 auto; padding:24px 16px 60px; }
+  .step-title { font-size:15px; margin-bottom:14px; }
+  .grid { display:grid; gap:10px; grid-template-columns:1fr 1fr; }
+  .card { text-align:left; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; cursor:pointer; color:var(--cream); }
+  .card:hover { border-color:var(--accent-brass); }
+  .card .name { font-family:'Oswald',sans-serif; text-transform:uppercase; }
+  .card .meta { color:var(--muted); font-size:13px; margin-top:4px; }
+  .days { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px; }
+  .day-btn { flex:0 0 auto; width:54px; border-radius:8px; padding:8px 0; text-align:center; background:var(--surface); border:1px solid var(--border); color:var(--cream); cursor:pointer; }
+  .day-btn.active { background:var(--accent-red); border-color:var(--accent-red); }
+  .day-btn:disabled { opacity:.35; cursor:not-allowed; }
+  .day-btn .wd { font-size:10px; text-transform:uppercase; color:var(--muted); }
+  .day-btn.active .wd { color:var(--cream); }
+  .day-btn .num { font-size:16px; font-weight:600; }
+  .slots { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .slot-btn { padding:10px 0; border-radius:6px; background:var(--surface); border:1px solid var(--border); color:var(--cream); cursor:pointer; }
+  .slot-btn:hover { border-color:var(--accent-brass); }
+  input { width:100%; padding:10px 12px; border-radius:6px; background:transparent; border:1px solid var(--border); color:var(--cream); font-size:14px; margin-bottom:10px; }
+  label.field { display:block; margin-bottom:10px; }
+  label.field span { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; border-radius:6px; border:none; cursor:pointer; font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.05em; font-size:14px; }
+  .btn-primary { background:var(--accent-red); color:var(--cream); }
+  .btn-gold { background:var(--accent-brass); color:var(--bg); }
+  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .back { background:none; border:none; color:var(--muted); cursor:pointer; margin-bottom:10px; font-size:13px; }
+  .recap { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:14px; }
+  .recap div { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .recap div:last-child { border-bottom:none; }
+  .muted { color:var(--muted); }
+  .error { color:var(--accent-red); font-size:13px; margin:-4px 0 10px; }
+  .center { text-align:center; }
+  .hidden { display:none; }
+  input[type="checkbox"] { width:16px; height:16px; padding:0; margin:2px 0 0; flex:0 0 auto; }
+  .offer { position:relative; background:var(--surface); border:1px solid var(--accent-brass); border-radius:8px; padding:22px 16px 16px; margin-bottom:24px; overflow:hidden; }
+  .offer::before { content:""; position:absolute; top:0; left:0; right:0; height:5px; background: repeating-linear-gradient(-45deg, var(--accent-red) 0 10px, var(--cream) 10px 20px, var(--accent-brass) 20px 30px); }
+  .offer .offer-price { font-family:'Oswald',sans-serif; font-size:34px; line-height:1; color:var(--accent-brass); }
+  .offer .offer-detail { font-size:13px; color:var(--muted); margin:10px 0 14px; line-height:1.5; }
+</style>
+</head>
+<body>
+<header><h1 class="display" id="bizName">Réservation</h1></header>
+<div class="stripebar"></div>
+<main>
+
+  <div id="step-service">
+    <div id="forfaitActiveBox" class="offer hidden">
+      <p class="display" style="margin:0 0 8px;font-size:16px">Votre forfait est actif</p>
+      <p id="forfaitActiveText" style="margin:0 0 6px;font-size:14px"></p>
+      <p id="forfaitActiveHint" class="muted" style="margin:0;font-size:13px;line-height:1.5"></p>
+    </div>
+    <div id="offerBox" class="offer hidden">
+      <p class="display" id="offerName" style="margin:0 0 8px;font-size:16px"></p>
+      <p style="margin:0"><span class="offer-price" id="offerPrice"></span> <span class="muted" id="offerDuration" style="font-size:13px"></span></p>
+      <p class="offer-detail" id="offerDetail"></p>
+      <button class="btn btn-gold" onclick="openForfait()">Acheter le forfait</button>
+    </div>
+    <div id="forfaitCheck" class="hidden" style="margin-bottom:22px">
+      <button class="back" style="margin:0;text-decoration:underline" onclick="toggleForfaitCheck()">J'ai déjà un forfait : le vérifier avec mon numéro</button>
+      <div id="forfaitCheckForm" class="hidden" style="margin-top:10px">
+        <div style="display:flex;gap:8px">
+          <select id="vcCountry" style="max-width:110px;flex:0 0 auto">
+            <option value="33">🇫🇷 +33</option>
+            <option value="41">🇨🇭 +41</option>
+            <option value="other">🌍 Autre</option>
+          </select>
+          <input id="vcPhone" placeholder="6 12 34 56 78" style="flex:1" />
+        </div>
+        <button class="btn btn-ghost" onclick="checkMyForfait()">Vérifier mon forfait</button>
+        <p id="forfaitCheckResult" style="font-size:12px;margin:8px 0 0"></p>
+      </div>
+    </div>
+    <p class="step-title display">1 — Choisissez une prestation</p>
+    <div id="servicesGrid" class="grid"></div>
+    <p id="noServices" class="muted hidden">La réservation en ligne n'est pas encore configurée.</p>
+    <div id="serviceContinueBox" class="hidden" style="margin-top:16px">
+      <label class="field"><span>Commentaire (facultatif) — dégradé, taper bas/mid/high, précisions…</span>
+        <textarea id="fComment" rows="3" style="width:100%;padding:10px 12px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--cream);font-family:'Inter',sans-serif;font-size:14px;resize:vertical;"></textarea>
+      </label>
+      <button class="btn btn-gold" onclick="goStep('contact')">Continuer</button>
+    </div>
+  </div>
+
+  <div id="step-contact" class="hidden">
+    <button class="back" onclick="goStep('service')">&larr; retour</button>
+    <p class="step-title display">2 — Vos coordonnées</p>
+    <label class="field"><span>Prénom</span><input id="fName" /></label>
+    <label class="field"><span>Téléphone</span>
+      <div style="display:flex;gap:8px">
+        <select id="fCountry" style="max-width:110px;flex:0 0 auto">
+          <option value="33">🇫🇷 +33</option>
+          <option value="41">🇨🇭 +41</option>
+          <option value="other">🌍 Autre</option>
+        </select>
+        <input id="fPhone" placeholder="6 12 34 56 78" style="flex:1" />
+      </div>
+    </label>
+    <label class="field"><span>Email</span><input id="fEmail" type="email" /></label>
+    <label class="field" id="promoField"><span>Code promo (facultatif)</span>
+      <div style="display:flex;gap:8px">
+        <input id="fPromo" placeholder="LANCEMENT2026" style="flex:1;min-width:0;text-transform:uppercase" />
+        <button type="button" class="btn btn-ghost" style="flex:0 0 auto;width:auto;white-space:nowrap;padding:0 16px" onclick="checkPromo()">Vérifier</button>
+      </div>
+      <div id="promoResult" style="font-size:12px;margin-top:6px"></div>
+    </label>
+    <p id="contactError" class="error hidden"></p>
+    <button class="btn btn-gold" onclick="toSlotStep()">Continuer</button>
+  </div>
+
+  <div id="step-slot" class="hidden">
+    <button class="back" onclick="goStep('contact')">&larr; retour</button>
+    <p class="step-title display">3 — Choisissez un créneau</p>
+    <p id="slotInfo" class="hidden" style="font-size:12px;margin:-4px 0 12px;line-height:1.5"></p>
+    <div id="daysRow" class="days"></div>
+    <div id="slotsGrid" class="slots"></div>
+    <p id="noSlots" class="muted hidden">Aucun créneau disponible ce jour-là.</p>
+  </div>
+
+  <div id="step-recap" class="hidden">
+    <button class="back" onclick="goStep('slot')">&larr; retour</button>
+    <p class="step-title display">4 — Récapitulatif</p>
+    <div class="recap" id="recapBox"></div>
+    <p id="recapPolicy" class="muted" style="font-size:12px; margin:-6px 0 14px;"></p>
+    <button class="btn btn-primary" id="confirmBtn" onclick="submitBooking()">Payer mon acompte</button>
+  </div>
+
+  <div id="step-done" class="hidden center">
+    <p class="step-title display" style="font-size:20px">Réservation enregistrée</p>
+    <p class="muted" id="doneRecap"></p>
+    <p id="doneBalance" class="muted hidden"></p>
+    <p style="margin:16px 0">Un souci de connexion est survenu au moment de vous rediriger vers le paiement. Réglez l'acompte ci-dessous pour valider définitivement votre créneau.</p>
+    <p class="muted" style="font-size:12px">Acompte remboursable en cas d'annulation au moins 48h avant le rendez-vous. Au-delà (annulation la veille ou le jour même), l'acompte reste dû.</p>
+    <button class="btn btn-gold" id="payBtn" onclick="goToPayment()">Payer l'acompte</button>
+    <p style="margin-top:18px"><button class="btn btn-ghost" onclick="location.reload()">Nouvelle réservation</button></p>
+  </div>
+
+  <div id="step-paid" class="hidden center">
+    <p class="step-title display" style="font-size:22px">Paiement reçu ✓</p>
+    <p style="margin:16px 0" id="paidRecap">Chargement…</p>
+    <p class="muted" style="font-size:13px">Votre rendez-vous est définitivement confirmé. À très vite !</p>
+    <p style="margin-top:18px"><a href="index.html" class="btn btn-ghost" style="text-decoration:none;display:inline-block">Retour à l'accueil</a></p>
+  </div>
+
+  <div id="step-cancelled" class="hidden center">
+    <p class="step-title display" style="font-size:22px">Réservation annulée</p>
+    <p style="margin:16px 0">Le paiement de l'acompte n'a pas été finalisé — votre créneau a été libéré et est de nouveau disponible à la réservation.</p>
+    <p style="margin-top:18px"><a href="index.html" class="btn btn-gold" style="text-decoration:none;display:inline-block">Refaire une réservation</a></p>
+  </div>
+
+  <div id="step-forfait" class="hidden">
+    <button class="back" onclick="goStep('service')">&larr; retour</button>
+    <p class="step-title display" id="forfaitTitle">Forfait</p>
+    <div class="recap" id="forfaitRecap"></div>
+    <label class="field"><span>Prénom</span><input id="fcName" /></label>
+    <label class="field"><span>Téléphone (le même que pour vos réservations)</span>
+      <div style="display:flex;gap:8px">
+        <select id="fcCountry" style="max-width:110px;flex:0 0 auto">
+          <option value="33">🇫🇷 +33</option>
+          <option value="41">🇨🇭 +41</option>
+          <option value="other">🌍 Autre</option>
+        </select>
+        <input id="fcPhone" placeholder="6 12 34 56 78" style="flex:1" />
+      </div>
+    </label>
+    <label class="field"><span>Email</span><input id="fcEmail" type="email" /></label>
+    <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--muted);margin:2px 0 14px;line-height:1.5">
+      <input type="checkbox" id="fcTerms" />
+      <span style="flex:1;min-width:0">J'ai lu les <a href="cgv.html" target="_blank" style="color:var(--accent-brass)">CGV</a> et je demande que le forfait soit activé dès le paiement : je renonce à mon droit de rétractation de 14 jours.</span>
+    </label>
+    <p id="forfaitError" class="error hidden"></p>
+    <button class="btn btn-primary" id="forfaitPayBtn" onclick="buyForfait()">Payer</button>
+  </div>
+
+  <div id="step-forfaitpaid" class="hidden center">
+    <p class="step-title display" style="font-size:22px">Paiement reçu ✓</p>
+    <p style="margin:16px 0" id="fpText">Vérification de votre paiement…</p>
+    <ol id="fpSteps" class="hidden" style="text-align:left;font-size:14px;line-height:1.7;margin:0 0 16px;padding-left:22px">
+      <li>Cliquez sur « Réserver avec mon forfait » ci-dessous.</li>
+      <li>Choisissez une prestation marquée « Inclus au forfait ».</li>
+      <li>Indiquez le même numéro de téléphone que pour l'achat.</li>
+      <li>Choisissez un créneau : le rendez-vous est confirmé tout de suite, sans acompte.</li>
+    </ol>
+    <p class="muted" style="font-size:13px" id="fpHint"></p>
+    <p style="margin-top:18px"><a href="index.html" class="btn btn-gold" style="text-decoration:none;display:inline-block">Réserver avec mon forfait</a></p>
+  </div>
+
+  <div id="step-forfaitcancelled" class="hidden center">
+    <p class="step-title display" style="font-size:22px">Achat annulé</p>
+    <p style="margin:16px 0">Le paiement du forfait n'a pas été finalisé : aucun montant n'a été débité.</p>
+    <p style="margin-top:18px"><a href="index.html" class="btn btn-gold" style="text-decoration:none;display:inline-block">Retour à l'accueil</a></p>
+  </div>
+
+  <div id="step-covered" class="hidden center">
+    <p class="step-title display" style="font-size:22px">Rendez-vous confirmé ✓</p>
+    <p class="muted" id="coveredRecap"></p>
+    <p style="margin:16px 0">Il est couvert par votre forfait illimité : aucun acompte à régler. Un email de confirmation vous a été envoyé.</p>
+    <p style="margin-top:18px"><a href="index.html" class="btn btn-ghost" style="text-decoration:none;display:inline-block">Retour à l'accueil</a></p>
+  </div>
+
+</main>
+<footer style="text-align:center;padding:20px;font-size:11px;color:var(--muted)">
+  <a href="mentions-legales.html" style="color:var(--muted);margin:0 8px">Mentions légales</a>·
+  <a href="cgv.html" style="color:var(--muted);margin:0 8px">CGV</a>·
+  <a href="confidentialite.html" style="color:var(--muted);margin:0 8px">Confidentialité</a>
+</footer>
+
+<script src="config.js"></script>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const cfg = window.APP_CONFIG;
+const supabase = createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
+const DAYS_SHORT = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
+const MONTHS_FR = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const pad = n => String(n).padStart(2,"0");
+const toDateStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmtLong = ds => { const d = new Date(ds+"T00:00:00"); return `${["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"][d.getDay()]} ${d.getDate()} ${MONTHS_FR[d.getMonth()]}`; };
+
+let services = [], settings = null, selectedService = null, selectedDate = null, selectedTime = null, lastBookingId = null, loyaltyInfo = null, promoInfo = null;
+let offer = null, subInfo = null;
+
+const MONTHS_LONG = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+const fmtDay = ds => { const d = new Date(ds+"T00:00:00"); return `${d.getDate()} ${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`; };
+const todayParis = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
+
+/* ---------- Forfait illimité ---------- */
+function offerOnSale() {
+  if (!offer || !offer.active) return false;
+  const t = todayParis();
+  if (offer.sale_start && t < offer.sale_start) return false;
+  if (offer.sale_end && t > offer.sale_end) return false;
+  return true;
+}
+const includedNames = () => services.filter(s => s.included_in_forfait).map(s => s.name);
+const offerPriceLabel = () => `${String(Number(offer.price)).replace(".", ",")} €`;
+const offerDurationLabel = () => offer.duration_months === 1 ? "1 mois" : `${offer.duration_months} mois`;
+
+function renderOffer() {
+  const box = document.getElementById("offerBox");
+  const incl = includedNames();
+  // L'offre n'est affichée que si elle est ouverte ET qu'au moins une prestation est incluse
+  if (!offerOnSale() || incl.length === 0) { box.classList.add("hidden"); return; }
+  document.getElementById("offerName").textContent = offer.name;
+  document.getElementById("offerPrice").textContent = offerPriceLabel();
+  document.getElementById("offerDuration").textContent = `pour ${offerDurationLabel()}, dès le paiement`;
+  document.getElementById("offerDetail").textContent =
+    `Payez une fois, coupez autant que vous voulez pendant ${offerDurationLabel()} à partir de l'achat, sans acompte. ` +
+    `Inclus : ${incl.join(", ")}. ${offer.max_upcoming} rendez-vous à venir maximum à la fois.` +
+    (offer.sale_end ? ` Offre valable jusqu'au ${fmtDay(offer.sale_end)}.` : "");
+  box.classList.remove("hidden");
+}
+
+const FORFAIT_PHONE_KEY = "mb_forfait_phone";
+const savedPhone = () => { try { return localStorage.getItem(FORFAIT_PHONE_KEY); } catch (e) { return null; } };
+const savePhone = (p) => { try { localStorage.setItem(FORFAIT_PHONE_KEY, p); } catch (e) {} };
+
+async function lookupForfait(phone) {
+  try {
+    const { data } = await supabase.rpc("check_subscription", { p_phone: phone });
+    subInfo = data && data[0] ? data[0] : null;
+  } catch (e) { subInfo = null; }
+  return !!subInfo;
+}
+
+function prefillPhone(phone) {
+  const sel = document.getElementById("fCountry"), inp = document.getElementById("fPhone");
+  if (phone.startsWith("+33")) { sel.value = "33"; inp.value = phone.slice(3); }
+  else if (phone.startsWith("+41")) { sel.value = "41"; inp.value = phone.slice(3); }
+  else { sel.value = "other"; inp.value = phone; }
+}
+
+function refreshForfaitUI() {
+  const incl = includedNames();
+  services.forEach(s => {
+    const el = document.getElementById(`incl-${s.id}`);
+    if (el) el.classList.toggle("hidden", !(subInfo && s.included_in_forfait));
+  });
+  const active = document.getElementById("forfaitActiveBox");
+  const check = document.getElementById("forfaitCheck");
+  if (subInfo && incl.length) {
+    document.getElementById("offerBox").classList.add("hidden");
+    check.classList.add("hidden");
+    document.getElementById("forfaitActiveText").textContent = `Votre forfait illimité est actif jusqu'au ${fmtDay(subInfo.expires_at)} inclus.`;
+    document.getElementById("forfaitActiveHint").textContent =
+      `Choisissez une prestation marquée « Inclus au forfait » (${incl.join(", ")}) : aucun acompte à payer.` +
+      (offer ? ` ${offer.max_upcoming} rendez-vous à venir maximum à la fois.` : "");
+    active.classList.remove("hidden");
+  } else {
+    active.classList.add("hidden");
+    renderOffer();
+    check.classList.toggle("hidden", !(offer && incl.length));
+  }
+}
+
+window.toggleForfaitCheck = () => document.getElementById("forfaitCheckForm").classList.toggle("hidden");
+
+window.checkMyForfait = async () => {
+  const res = document.getElementById("forfaitCheckResult");
+  if (!document.getElementById("vcPhone").value.trim()) {
+    res.style.color = "var(--accent-red)"; res.textContent = "Saisissez votre numéro de téléphone."; return;
+  }
+  const phone = buildPhoneFrom("vcCountry", "vcPhone");
+  res.style.color = "var(--muted)"; res.textContent = "Vérification…";
+  if (await lookupForfait(phone)) { savePhone(phone); prefillPhone(phone); refreshForfaitUI(); }
+  else { res.style.color = "var(--accent-red)"; res.textContent = "Aucun forfait actif pour ce numéro. Utilisez celui saisi lors de l'achat."; }
+};
+
+function isCovered(ds) {
+  return !!(subInfo && selectedService && selectedService.included_in_forfait && ds && ds <= subInfo.expires_at);
+}
+
+function updateSlotInfo() {
+  const el = document.getElementById("slotInfo");
+  if (!subInfo || !selectedService) { el.classList.add("hidden"); return; }
+  el.classList.remove("hidden");
+  if (selectedService.included_in_forfait) {
+    el.style.color = "var(--accent-brass)";
+    el.textContent = `✓ Forfait illimité actif jusqu'au ${fmtDay(subInfo.expires_at)} : pas d'acompte pour cette prestation. Après cette date, le tarif normal s'applique.`;
+  } else {
+    el.style.color = "var(--muted)";
+    el.textContent = `Votre forfait est actif, mais « ${selectedService.name} » n'y est pas incluse : acompte et tarif normaux.`;
+  }
+}
+
+window.openForfait = () => {
+  if (!offerOnSale()) return;
+  document.getElementById("forfaitTitle").textContent = offer.name;
+  document.getElementById("forfaitRecap").innerHTML = `
+    <div><span class="muted">Forfait</span><span>${offer.name}</span></div>
+    <div><span class="muted">Prix</span><span>${offerPriceLabel()}, payé une seule fois</span></div>
+    <div><span class="muted">Durée</span><span>${offerDurationLabel()} à partir du paiement</span></div>
+    <div><span class="muted">Inclus</span><span style="text-align:right">${includedNames().join(", ")}</span></div>
+    <div><span class="muted">Limite</span><span style="text-align:right">${offer.max_upcoming} rendez-vous à venir à la fois</span></div>`;
+  document.getElementById("forfaitPayBtn").textContent = `Payer ${offerPriceLabel()}`;
+  document.getElementById("forfaitError").classList.add("hidden");
+  goStep("forfait");
+};
+
+window.buyForfait = async () => {
+  const btn = document.getElementById("forfaitPayBtn");
+  const err = document.getElementById("forfaitError");
+  const showErr = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+  const name = document.getElementById("fcName").value.trim();
+  const rawPhone = document.getElementById("fcPhone").value.trim();
+  const email = document.getElementById("fcEmail").value.trim();
+  if (!name || !rawPhone || !/^\S+@\S+\.\S+$/.test(email)) { showErr("Merci de renseigner un prénom, un téléphone et un email valide."); return; }
+  if (!document.getElementById("fcTerms").checked) { showErr("Merci d'accepter les conditions pour continuer."); return; }
+  err.classList.add("hidden");
+
+  btn.disabled = true; btn.textContent = "Envoi…";
+  const subId = crypto.randomUUID();
+  const subPhone = buildPhoneFrom("fcCountry", "fcPhone");
+  savePhone(subPhone);
+  const { error } = await supabase.from("subscriptions").insert({
+    id: subId, client_name: name, client_phone: subPhone, client_email: email,
+  });
+  if (error) {
+    showErr(error.code === "P0001" ? error.message : "Impossible de lancer l'achat pour le moment. Merci de réessayer.");
+    btn.disabled = false; btn.textContent = `Payer ${offerPriceLabel()}`;
+    return;
+  }
+
+  btn.textContent = "Redirection vers le paiement…";
+  try {
+    const res = await fetch(`${cfg.FUNCTIONS_URL}/create-checkout-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ subscription_id: subId }),
+    });
+    const json = await res.json();
+    if (json.url) { window.location.href = json.url; return; }
+    throw new Error(json.error || "Erreur");
+  } catch (e) {
+    showErr("Impossible d'ouvrir le paiement pour le moment. Merci de réessayer dans un instant.");
+    btn.disabled = false; btn.textContent = `Payer ${offerPriceLabel()}`;
+  }
+};
+
+async function handleForfaitReturn(flag, subId) {
+  if (flag === "1" && subId) {
+    goStep("forfaitpaid");
+    let row = null;
+    for (let i = 0; i < 6; i++) {
+      const { data } = await supabase.rpc("get_subscription_summary", { p_id: subId });
+      row = data && data[0];
+      if (row && row.status === "actif") break;
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    if (row && row.status === "actif") {
+      document.getElementById("fpText").textContent = `Merci ${row.client_name} ! Votre forfait est actif jusqu'au ${fmtDay(row.expires_at)} inclus.`;
+      document.getElementById("fpSteps").classList.remove("hidden");
+      document.getElementById("fpHint").textContent = "Un email de confirmation avec ces explications vous a été envoyé.";
+    } else {
+      document.getElementById("fpText").textContent = "Paiement reçu ! L'activation de votre forfait peut prendre quelques instants.";
+      document.getElementById("fpHint").textContent = "Vous recevrez un email dès qu'il est actif. Sans nouvelle d'ici quelques minutes, contactez-moi.";
+    }
+  } else {
+    if (subId) { try { await supabase.rpc("cancel_pending_subscription", { p_id: subId }); } catch (e) {} }
+    goStep("forfaitcancelled");
+  }
+}
+
+async function submitCoveredBooking(btn, name, phone, email, comment) {
+  const bookingId = crypto.randomUUID();
+  const { error } = await supabase.rpc("book_with_subscription", {
+    p_id: bookingId, p_service_id: selectedService.id, p_date: selectedDate, p_time: selectedTime,
+    p_name: name, p_phone: phone, p_email: email, p_comment: comment || null,
+  });
+  if (error) {
+    alert(error.code === "P0001" ? error.message : "Impossible de confirmer le rendez-vous. Merci de réessayer.");
+    btn.disabled = false; btn.textContent = "Confirmer mon rendez-vous";
+    goStep("slot");
+    return;
+  }
+  document.getElementById("coveredRecap").textContent = `${selectedService.name} · ${fmtLong(selectedDate)} à ${selectedTime.slice(0,5)}`;
+  goStep("covered");
+}
+
+window.checkPromo = async () => {
+  const code = document.getElementById("fPromo").value.trim();
+  const resultEl = document.getElementById("promoResult");
+  if (!code) { promoInfo = null; resultEl.textContent = ""; return; }
+  try {
+    const { data } = await supabase.rpc("check_promo_code", { p_code: code });
+    const r = data && data[0];
+    if (r && r.valid) {
+      promoInfo = { code, type: r.type, value: r.value };
+      const label = r.type === "free" ? "prestation offerte" : r.type === "percent" ? `-${r.value}%` : `-${r.value} €`;
+      resultEl.innerHTML = `<span style="color:var(--accent-brass)">✓ Code valide : ${label}</span>`;
+    } else {
+      promoInfo = null;
+      resultEl.innerHTML = `<span style="color:var(--accent-red)">${r ? r.message : "Code invalide."}</span>`;
+    }
+  } catch (e) {
+    promoInfo = null;
+    resultEl.textContent = "";
+  }
+};
+
+function getActiveDiscount() {
+  if (promoInfo) return { source: "promo", code: promoInfo.code, type: promoInfo.type, value: promoInfo.value };
+  if (loyaltyInfo?.reward && loyaltyInfo.reward !== "none") {
+    return { source: "loyalty", type: loyaltyInfo.reward === "free" ? "free" : "percent", value: loyaltyInfo.reward === "half" ? 50 : null, upcoming_visit: loyaltyInfo.upcoming_visit };
+  }
+  return null;
+}
+
+function computeBalance(price, deposit) {
+  const d = getActiveDiscount();
+  if (!d) return { balance: Math.max(price - deposit, 0).toFixed(2), label: null };
+  let effective = price;
+  if (d.type === "free") effective = 0;
+  else if (d.type === "percent") effective = price * (1 - (d.value || 0) / 100);
+  else if (d.type === "fixed") effective = Math.max(price - (d.value || 0), 0);
+  const balance = Math.max(effective - deposit, 0).toFixed(2);
+  const label = d.source === "promo"
+    ? (d.type === "free" ? `Code promo "${d.code}" — prestation offerte` : d.type === "percent" ? `Code promo "${d.code}" — -${d.value}%` : `Code promo "${d.code}" — -${d.value} €`)
+    : (d.type === "free" ? `🎉 ${d.upcoming_visit}ème passage — coupe offerte` : `🎉 ${d.upcoming_visit}ème passage — -50%`);
+  return { balance, label };
+}
+
+function buildPhoneFrom(countryId, phoneId) {
+  const raw = document.getElementById(phoneId).value.trim();
+  const cc = document.getElementById(countryId).value;
+  if (cc === "other") return raw.replace(/\s+/g, "");
+  let digits = raw.replace(/[^0-9]/g, "");
+  if (digits.startsWith("0")) digits = digits.slice(1);
+  return `+${cc}${digits}`;
+}
+const buildPhone = () => buildPhoneFrom("fCountry", "fPhone");
+[["fCountry", "fPhone"], ["fcCountry", "fcPhone"], ["vcCountry", "vcPhone"]].forEach(([c, p]) => {
+  document.getElementById(c)?.addEventListener("change", () => {
+    document.getElementById(p).placeholder = document.getElementById(c).value === "other" ? "+49 6 12 34 56 78" : "6 12 34 56 78";
+  });
+});
+
+async function init() {
+  const { data: s } = await supabase.from("settings").select("*").single();
+  settings = s;
+  document.getElementById("bizName").textContent = settings?.business_name || "Réservation";
+
+  const { data: svcs } = await supabase.from("services").select("*").eq("active", true).order("name");
+  services = svcs || [];
+  try {
+    const { data: o } = await supabase.from("forfait_offer").select("*").eq("id", 1).single();
+    offer = o;
+    renderOffer();
+  } catch (e) { /* l'offre est un bonus : jamais bloquant */ }
+  const grid = document.getElementById("servicesGrid");
+  if (services.length === 0) {
+    document.getElementById("noServices").classList.remove("hidden");
+    return;
+  }
+  grid.innerHTML = services.map(s => `
+    <div class="card" id="svc-${s.id}" onclick="pickService('${s.id}')">
+      <div class="name">${s.name}</div>
+      <div class="meta">${s.duration_minutes} min${s.price ? " · " + s.price + " €" : ""}</div>
+      <div class="meta hidden" id="incl-${s.id}" style="color:var(--accent-brass)">Inclus au forfait : sans acompte</div>
+    </div>`).join("");
+  const sp = savedPhone();
+  if (sp && await lookupForfait(sp)) prefillPhone(sp);
+  refreshForfaitUI();
+}
+
+window.pickService = (id) => {
+  selectedService = services.find(s => s.id === id);
+  document.querySelectorAll("#servicesGrid .card").forEach(c => c.style.borderColor = "var(--border)");
+  document.getElementById(`svc-${id}`).style.borderColor = "var(--accent-brass)";
+  document.getElementById("serviceContinueBox").classList.remove("hidden");
+  const promoField = document.getElementById("promoField");
+  if (selectedService.excluded_from_promo) {
+    promoField.classList.add("hidden");
+    document.getElementById("fPromo").value = "";
+    document.getElementById("promoResult").textContent = "";
+    promoInfo = null;
+  } else {
+    promoField.classList.remove("hidden");
+  }
+};
+
+window.toSlotStep = async () => {
+  const name = document.getElementById("fName").value.trim();
+  const phone = document.getElementById("fPhone").value.trim();
+  const email = document.getElementById("fEmail").value.trim();
+  const err = document.getElementById("contactError");
+  if (!name || !phone || !/^\S+@\S+\.\S+$/.test(email)) {
+    err.textContent = "Merci de renseigner un prénom, un téléphone et un email valide.";
+    err.classList.remove("hidden");
+    return;
+  }
+  err.classList.add("hidden");
+
+  loyaltyInfo = null;
+  try {
+    const { data } = await supabase.rpc("get_loyalty_status", { p_phone: buildPhone() });
+    if (data && data[0]) loyaltyInfo = data[0];
+  } catch (e) { /* silencieux : la fidélité est un bonus, pas bloquant */ }
+
+  subInfo = null;
+  try {
+    const { data } = await supabase.rpc("check_subscription", { p_phone: buildPhone() });
+    if (data && data[0]) subInfo = data[0];
+  } catch (e) { /* silencieux : sans forfait, le parcours normal s'applique */ }
+
+  updateSlotInfo();
+  goStep("slot");
+  renderDays();
+};
+
+function renderDays() {
+  const row = document.getElementById("daysRow");
+  const days = Array.from({length:21}, (_,i) => { const d = new Date(); d.setDate(d.getDate()+i); return d; });
+  row.innerHTML = days.map(d => {
+    const ds = toDateStr(d);
+    return `<button class="day-btn" id="day-${ds}" onclick="pickDate('${ds}')">
+      <div class="wd">${DAYS_SHORT[d.getDay()]}</div><div class="num">${d.getDate()}</div>
+    </button>`;
+  }).join("");
+}
+
+window.pickDate = async (ds) => {
+  selectedDate = ds;
+  document.querySelectorAll(".day-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById(`day-${ds}`)?.classList.add("active");
+  const grid = document.getElementById("slotsGrid");
+  const noSlots = document.getElementById("noSlots");
+  grid.innerHTML = "";
+  noSlots.classList.add("hidden");
+
+  const { data: slots, error } = await supabase.rpc("get_available_slots", { p_date: ds, p_service_id: selectedService.id });
+  if (error || !slots || slots.length === 0) {
+    noSlots.classList.remove("hidden");
+    return;
+  }
+  grid.innerHTML = slots.map(t => {
+    const short = t.slice(0,5);
+    return `<button class="slot-btn" onclick="pickTime('${t}')">${short}</button>`;
+  }).join("");
+};
+
+window.pickTime = (t) => {
+  selectedTime = t;
+  const name = document.getElementById("fName").value.trim();
+  const comment = document.getElementById("fComment").value.trim();
+  const deposit = Number(settings.deposit_amount) || 0;
+  const hasPrice = selectedService.price !== null && selectedService.price !== undefined;
+  const covered = isCovered(selectedDate);
+  const confirmBtn = document.getElementById("confirmBtn");
+  const isFirstVisit = loyaltyInfo && loyaltyInfo.visit_count === 0;
+  const welcomeNote = isFirstVisit
+    ? `<p class="muted" style="font-size:12px;margin:10px 0 0;color:var(--accent-brass)">🎉 C'est votre première réservation chez nous ! Une carte de fidélité vient d'être créée pour vous : tous les 6 passages, -50% ; tous les 10 passages, une coupe offerte.</p>`
+    : "";
+
+  let serviceLine, payLines, policy;
+  if (covered) {
+    serviceLine = selectedService.name;
+    payLines = `
+    <div><span class="muted">Forfait illimité</span><span>Inclus, valable jusqu'au ${fmtDay(subInfo.expires_at)}</span></div>
+    <div><span class="muted">À régler</span><span>0 €</span></div>`;
+    policy = "Ce rendez-vous est couvert par votre forfait : aucun acompte à régler. Merci de me prévenir en cas d'empêchement pour libérer le créneau.";
+    confirmBtn.textContent = "Confirmer mon rendez-vous";
+  } else {
+    const { balance, label } = hasPrice ? computeBalance(Number(selectedService.price), deposit) : { balance: null, label: null };
+    const rewardLine = label ? `<div><span class="muted">${promoInfo ? "Code promo" : "Fidélité"}</span><span>${label}</span></div>` : "";
+    serviceLine = `${selectedService.name}${hasPrice ? " — " + selectedService.price + " €" : ""}`;
+    payLines = `
+    ${rewardLine}
+    <div><span class="muted">Acompte à régler en ligne</span><span>${deposit} €</span></div>
+    ${hasPrice ? `<div><span class="muted">Solde à régler sur place</span><span>${balance} €</span></div>` : ""}`;
+    policy = "L'acompte est remboursable en cas d'annulation au moins 48h avant le rendez-vous. Passé ce délai (annulation la veille ou le jour même), l'acompte reste dû et ne peut pas être remboursé.";
+    confirmBtn.textContent = "Payer mon acompte";
+  }
+  confirmBtn.disabled = false;
+
+  document.getElementById("recapBox").innerHTML = `
+    <div><span class="muted">Prestation</span><span>${serviceLine}</span></div>
+    ${comment ? `<div><span class="muted">Commentaire</span><span>${comment}</span></div>` : ""}
+    <div><span class="muted">Date</span><span>${fmtLong(selectedDate)}</span></div>
+    <div><span class="muted">Heure</span><span>${selectedTime.slice(0,5)}</span></div>
+    <div><span class="muted">Prénom</span><span>${name}</span></div>${payLines}
+    ${welcomeNote}`;
+  document.getElementById("recapPolicy").textContent = policy;
+  goStep("recap");
+};
+
+window.submitBooking = async () => {
+  const btn = document.getElementById("confirmBtn");
+  btn.disabled = true; btn.textContent = "Envoi…";
+  const name = document.getElementById("fName").value.trim();
+  const phone = buildPhone();
+  const email = document.getElementById("fEmail").value.trim();
+  const comment = document.getElementById("fComment").value.trim();
+  if (isCovered(selectedDate)) { await submitCoveredBooking(btn, name, phone, email, comment); return; }
+  const reward = !promoInfo && loyaltyInfo?.reward && loyaltyInfo.reward !== "none" ? loyaltyInfo.reward : null;
+  const bookingId = crypto.randomUUID();
+
+  const { error } = await supabase.from("bookings").insert({
+    id: bookingId,
+    service_id: selectedService.id,
+    booking_date: selectedDate,
+    start_time: selectedTime,
+    client_name: name,
+    client_phone: phone,
+    client_email: email,
+    client_comment: comment || null,
+    reward_applied: reward,
+    promo_code: promoInfo ? promoInfo.code : null,
+  });
+
+  if (error) {
+    const msg = error.message?.includes("code promo")
+      ? error.message
+      : "Ce créneau vient d'être pris, merci d'en choisir un autre.";
+    alert(msg);
+    btn.disabled = false; btn.textContent = "Payer mon acompte";
+    goStep("slot");
+    return;
+  }
+  lastBookingId = bookingId;
+
+  // Prépare l'écran de secours (affiché uniquement si la redirection Stripe échoue)
+  document.getElementById("doneRecap").textContent = `${selectedService.name} · ${fmtLong(selectedDate)} à ${selectedTime.slice(0,5)}`;
+  const hasPrice = selectedService.price !== null && selectedService.price !== undefined;
+  const balanceEl = document.getElementById("doneBalance");
+  if (hasPrice) {
+    const { balance } = computeBalance(Number(selectedService.price), Number(settings.deposit_amount) || 0);
+    balanceEl.textContent = `Solde à régler sur place le jour du rendez-vous : ${balance} €`;
+    balanceEl.classList.remove("hidden");
+  }
+
+  btn.textContent = "Redirection vers le paiement…";
+  try {
+    const res = await fetch(`${cfg.FUNCTIONS_URL}/create-checkout-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ booking_id: lastBookingId }),
+    });
+    const json = await res.json();
+    if (json.url) { window.location.href = json.url; return; }
+    throw new Error(json.error || "Erreur");
+  } catch (e) {
+    goStep("done");
+  }
+};
+
+window.goToPayment = async () => {
+  const btn = document.getElementById("payBtn");
+  btn.disabled = true; btn.textContent = "Redirection…";
+  try {
+    const res = await fetch(`${cfg.FUNCTIONS_URL}/create-checkout-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ booking_id: lastBookingId }),
+    });
+    const json = await res.json();
+    if (json.url) window.location.href = json.url;
+    else throw new Error(json.error || "Erreur");
+  } catch (e) {
+    alert("Impossible d'ouvrir le paiement pour le moment. Réessayez dans un instant.");
+    btn.disabled = false; btn.textContent = "Payer l'acompte";
+  }
+};
+
+window.goStep = (name) => {
+  ["service","slot","contact","recap","done","paid","cancelled","forfait","forfaitpaid","forfaitcancelled","covered"].forEach(s => {
+    document.getElementById(`step-${s}`).classList.toggle("hidden", s !== name);
+  });
+};
+
+async function checkPaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const forfaitFlag = params.get("forfait");
+  if (forfaitFlag !== null) { await handleForfaitReturn(forfaitFlag, params.get("sub")); return true; }
+  const paid = params.get("paid");
+  const bookingId = params.get("booking");
+  if (paid === null) return false;
+
+  if (paid === "1" && bookingId) {
+    goStep("paid");
+    const { data, error } = await supabase.rpc("get_booking_summary", { p_booking_id: bookingId });
+    const row = data && data[0];
+    document.getElementById("paidRecap").textContent = row
+      ? `${row.service_name} · ${fmtLong(row.booking_date)} à ${row.start_time.slice(0,5)} — Merci ${row.client_name} !`
+      : "Merci, votre réservation est confirmée.";
+  } else {
+    if (bookingId) {
+      try { await supabase.rpc("cancel_pending_booking", { p_booking_id: bookingId }); } catch (e) {}
+    }
+    goStep("cancelled");
+  }
+  return true;
+}
+
+init().then(() => { checkPaymentReturn(); });
+</script>
+</body>
+</html>
